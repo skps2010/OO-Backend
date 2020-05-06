@@ -2,12 +2,13 @@
 var io = require('socket.io')({
     transports: ['websocket'],
 });
-var util = require('util')
+var AsyncLock = require('async-lock');
+var lock = new AsyncLock();
 const fs = require('fs');
-
-var config = JSON.parse(fs.readFileSync('config.json'));
+const config = JSON.parse(fs.readFileSync('config.json'));
 var room_dict = {};
 var player_dict = {}
+
 config['rooms'].forEach(room => {
     room_dict[room.id] = {
         id: room.id,
@@ -26,8 +27,6 @@ class Player {
     }
 }
 
-io.listen(4567);
-
 function sendPlayerCount(id) {
     room_dict[id].players.forEach(pid => {
         player_dict[pid].socket.emit('playerCount', {
@@ -36,26 +35,40 @@ function sendPlayerCount(id) {
     })
 }
 
+function warp(func) {
+    function warpped(...args) {
+        try {
+            func(...args)
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
+    return warpped
+}
+
+io.listen(4567);
+
 io.on('connection', socket => {
     console.log('connected')
     player_dict[socket.id] = new Player(socket)
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', warp(() => {
         console.log('disconnected')
         delete player_dict[socket.id]
-    })
+    }))
 
-    socket.on('getServerName', data => {
+    socket.on('getServerName', warp(data => {
         console.log('send name');
         socket.emit("getServerName", { name: config['serverName'] });
-    })
+    }))
 
-    socket.on('listRoom', data => {
+    socket.on('listRoom', warp(data => {
         console.log('send rooms');
         socket.emit("listRoom", { rooms: Object.values(room_dict) });
-    })
+    }))
 
-    socket.on('joinRoom', data => {
+    socket.on('joinRoom', warp(data => {
         let id = data.roomID;
         let msg;
         let success = false;
@@ -75,9 +88,9 @@ io.on('connection', socket => {
             "msg": msg
         });
         sendPlayerCount(id)
-    })
+    }))
 
-    socket.on('exitRoom', data => {
+    socket.on('exitRoom', warp(data => {
         let success = false;
         let id = player_dict[socket.id].room
 
@@ -93,7 +106,7 @@ io.on('connection', socket => {
             "sueccess": success,
         });
         sendPlayerCount(id)
-    })
+    }))
 })
 
 console.log('開始')
