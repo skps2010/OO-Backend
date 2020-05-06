@@ -1,3 +1,16 @@
 {
-    "serverName": "台灣共和國"
+    "serverName": "台灣共和國",
+    "rooms": [{
+        "id": 1,
+        "name": "a"
+    }, {
+        "id": 2,
+        "name": "two"
+    }, {
+        "id": 3,
+        "name": "三"
+    }, {
+        "id": 4,
+        "name": "死"
+    }]
 }
