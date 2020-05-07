@@ -1,11 +1,10 @@
 'use strict';
-var io = require('socket.io')({
+const io = require('socket.io')({
     transports: ['websocket'],
 });
-var AsyncLock = require('async-lock');
-var lock = new AsyncLock();
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync('config.json'));
+const assert = require('assert');
 var room_dict = {};
 var player_dict = {}
 
@@ -50,26 +49,25 @@ function warp(func) {
 io.listen(4567);
 
 io.on('connection', socket => {
-    console.log('connected')
+    console.log(`${socket.id} connected`)
     player_dict[socket.id] = new Player(socket)
 
     socket.on('disconnect', warp(() => {
-        console.log('disconnected')
+        console.log(`${socket.id} disconnected`)
         delete player_dict[socket.id]
     }))
 
     socket.on('getServerName', warp(data => {
-        console.log('send name');
         socket.emit("getServerName", { name: config['serverName'] });
     }))
 
     socket.on('listRoom', warp(data => {
-        console.log('send rooms');
         socket.emit("listRoom", { rooms: Object.values(room_dict) });
     }))
 
     socket.on('joinRoom', warp(data => {
         let id = data.roomID;
+        assert.equal(typeof id, 'string')
         let msg;
         let success = false;
 
@@ -82,12 +80,12 @@ io.on('connection', socket => {
 
             room_dict[id].players.push(socket.id);
             player_dict[socket.id].room = id
+            sendPlayerCount(id)
         }
         socket.emit("joinRoom", {
             "sueccess": success,
             "msg": msg
         });
-        sendPlayerCount(id)
     }))
 
     socket.on('exitRoom', warp(data => {
@@ -101,11 +99,11 @@ io.on('connection', socket => {
             let index = players.indexOf(socket.id);
             if (index !== -1) players.splice(index, 1);
             player_dict[socket.id].room = null
+            sendPlayerCount(id)
         }
         socket.emit("exitRoom", {
             "sueccess": success,
         });
-        sendPlayerCount(id)
     }))
 })
 
