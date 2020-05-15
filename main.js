@@ -7,15 +7,53 @@ const config = JSON.parse(fs.readFileSync('config.json'));
 const assert = require('assert');
 var room_dict = {};
 var player_dict = {}
+var tournament = new Tournament(config['tournament'])
 
 config['rooms'].forEach(room => {
-    room_dict[room.id] = {
-        id: room.id,
-        name: room.name,
-        players: [],
-        type: "normal"
-    }
+    room_dict[room.id] = new Room(room.id, room.name, "normal")
 })
+
+class Tournament {
+    constructor(count) { // count為參加人數
+        let rounds = count * 2 - 1
+        this.rooms = new Array(rounds + 1);
+        let prefix = 'tournament'
+
+        for (let i = rounds; i >= 1; i--) {
+            let id = prefix + i
+            let room = new Room(id, room.name, "tournament", i >= count)
+            this.rooms[i] = room
+            room_dict[id] = room
+
+            if (i < count) {
+                this.rooms[i * 2].next = room
+                this.rooms[i * 2 + 1].next = room
+            }
+        }
+    }
+
+    getPlayers() {
+        let players = [];
+        this.rooms.forEach(room => players = players.concat(room.players))
+        return players
+    }
+}
+
+class Room {
+    constructor(id, name, type, visible = true) {
+        this.id = id;
+        this.name = name;
+        this.players = [];
+        this.type = type;
+        this.visible = visible;
+        this.next = null;
+    }
+
+    getPlayers() {
+        if (this.type == 'normal') return this.players
+        return tournament.getPlayers()
+    }
+}
 
 class Player {
     constructor(socket) {
@@ -27,9 +65,10 @@ class Player {
 }
 
 function sendPlayerCount(id) {
-    room_dict[id].players.forEach(pid => {
+    let players = room_dict[id].getPlayers()
+    players.forEach(pid => {
         player_dict[pid].socket.emit('playerCount', {
-            count: room_dict[id].players.length
+            count: players.length
         })
     })
 }
@@ -62,7 +101,7 @@ io.on('connection', socket => {
     }))
 
     socket.on('listRoom', warp(data => {
-        socket.emit("listRoom", { rooms: Object.values(room_dict) });
+        socket.emit("listRoom", { rooms: Object.values(room_dict).filter(room => room.visible) });
     }))
 
     socket.on('joinRoom', warp(data => {
