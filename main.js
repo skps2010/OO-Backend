@@ -7,11 +7,6 @@ const config = JSON.parse(fs.readFileSync('config.json'));
 const assert = require('assert');
 var room_dict = {};
 var player_dict = {}
-var tournament = new Tournament(config['tournament'])
-
-config['rooms'].forEach(room => {
-    room_dict[room.id] = new Room(room.id, room.name, "normal")
-})
 
 class Tournament {
     constructor(count) { // count為參加人數
@@ -21,7 +16,7 @@ class Tournament {
 
         for (let i = rounds; i >= 1; i--) {
             let id = prefix + i
-            let room = new Room(id, room.name, "tournament", i >= count)
+            let room = new Room(id, "tournament room #" + i, "tournament", i >= count)
             this.rooms[i] = room
             room_dict[id] = room
 
@@ -54,6 +49,11 @@ class Room {
         return tournament.getPlayers()
     }
 }
+
+config['rooms'].forEach(room => {
+    room_dict[room.id] = new Room(room.id, room.name, "normal")
+})
+var tournament = new Tournament(config['tournament'])
 
 class Player {
     constructor(socket) {
@@ -101,7 +101,17 @@ io.on('connection', socket => {
     }))
 
     socket.on('listRoom', warp(data => {
-        socket.emit("listRoom", { rooms: Object.values(room_dict).filter(room => room.visible) });
+        console.log(room_dict)
+        socket.emit("listRoom", {
+            rooms: Object.values(room_dict).filter(room => room.visible).map(room => {
+                return {
+                    id: room.id,
+                    name: room.name,
+                    players: room.players,
+                    type: room.type
+                }
+            })
+        });
     }))
 
     socket.on('joinRoom', warp(data => {
