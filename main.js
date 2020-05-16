@@ -5,6 +5,7 @@ const io = require('socket.io')({
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync('config.json'));
 const assert = require('assert');
+const port = 4567
 var room_dict = {};
 var player_dict = {}
 
@@ -85,7 +86,7 @@ function warp(func) {
     return warpped
 }
 
-io.listen(4567);
+io.listen(port);
 
 io.on('connection', socket => {
     console.log(`${socket.id} connected`)
@@ -156,4 +157,4 @@ io.on('connection', socket => {
     }))
 })
 
-console.log('開始')
+console.log('開始，網址為： localhost:' + port)
