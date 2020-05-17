@@ -91,6 +91,22 @@ function warp(func) {
     return warpped
 }
 
+function exitRoom(pid) {
+    let success = false;
+    let id = playerDict[pid].room
+
+    if (playerDict[pid].room != null) {
+        success = true;
+
+        let players = roomDict[id].players
+        let index = players.indexOf(pid);
+        if (index !== -1) players.splice(index, 1);
+        playerDict[pid].room = null
+        sendPlayerCount(id)
+    }
+    return success
+}
+
 io.listen(port);
 
 io.on('connection', socket => {
@@ -98,6 +114,7 @@ io.on('connection', socket => {
     playerDict[socket.id] = new Player(socket)
 
     socket.on('disconnect', warp(() => {
+        exitRoom(socket.id)
         console.log(`${socket.id} disconnected`)
         delete playerDict[socket.id]
     }))
@@ -145,20 +162,8 @@ io.on('connection', socket => {
     }))
 
     socket.on('exitRoom', warp(data => {
-        let success = false;
-        let id = playerDict[socket.id].room
-
-        if (playerDict[socket.id].room != null) {
-            success = true;
-
-            let players = roomDict[id].players
-            let index = players.indexOf(socket.id);
-            if (index !== -1) players.splice(index, 1);
-            playerDict[socket.id].room = null
-            sendPlayerCount(id)
-        }
         socket.emit("exitRoom", {
-            "success": success,
+            "success": exitRoom(socker.id),
         });
     }))
 })
