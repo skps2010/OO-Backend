@@ -5,7 +5,7 @@ const io = require('socket.io')({
 const fs = require('fs');
 const config = JSON.parse(fs.readFileSync('config.json'));
 const assert = require('assert');
-const port = 4567
+const port = config['port']
 var roomDict = {};
 var playerDict = {}
 
@@ -48,6 +48,11 @@ class Room {
     getPlayers() {
         if (this.type == 'normal') return this.players
         return tournament.getPlayers()
+    }
+
+    maxPlayer() {
+        if (this.type == 'normal') return 2
+        return config['tournament']
     }
 }
 
@@ -132,8 +137,10 @@ io.on('connection', socket => {
             sendPlayerCount(id)
         }
         socket.emit("joinRoom", {
-            "sueccess": success,
-            "msg": msg
+            "success": success,
+            "msg": msg,
+            "roomName": roomDict[id].name,
+            "maxPlayer": roomDict[id].maxPlayer()
         });
     }))
 
@@ -151,7 +158,7 @@ io.on('connection', socket => {
             sendPlayerCount(id)
         }
         socket.emit("exitRoom", {
-            "sueccess": success,
+            "success": success,
         });
     }))
 })
