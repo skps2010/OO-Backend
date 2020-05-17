@@ -102,13 +102,12 @@ io.on('connection', socket => {
     }))
 
     socket.on('listRoom', warp(data => {
-        console.log(room_dict)
         socket.emit("listRoom", {
             rooms: Object.values(room_dict).filter(room => room.visible).map(room => {
                 return {
                     id: room.id,
                     name: room.name,
-                    players: room.players,
+                    playerCount: room.players.length,
                     type: room.type
                 }
             })
