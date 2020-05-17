@@ -6,8 +6,8 @@ const fs = require('fs');
 const config = JSON.parse(fs.readFileSync('config.json'));
 const assert = require('assert');
 const port = 4567
-var room_dict = {};
-var player_dict = {}
+var roomDict = {};
+var playerDict = {}
 
 class Tournament {
     constructor(count) { // count為參加人數
@@ -19,7 +19,7 @@ class Tournament {
             let id = prefix + i
             let room = new Room(id, "tournament room #" + i, "tournament", i >= count)
             this.rooms[i] = room
-            room_dict[id] = room
+            roomDict[id] = room
 
             if (i < count) {
                 this.rooms[i * 2].next = room
@@ -52,7 +52,7 @@ class Room {
 }
 
 config['rooms'].forEach(room => {
-    room_dict[room.id] = new Room(room.id, room.name, "normal")
+    roomDict[room.id] = new Room(room.id, room.name, "normal")
 })
 var tournament = new Tournament(config['tournament'])
 
@@ -66,9 +66,9 @@ class Player {
 }
 
 function sendPlayerCount(id) {
-    let players = room_dict[id].getPlayers()
+    let players = roomDict[id].getPlayers()
     players.forEach(pid => {
-        player_dict[pid].socket.emit('playerCount', {
+        playerDict[pid].socket.emit('playerCount', {
             count: players.length
         })
     })
@@ -90,11 +90,11 @@ io.listen(port);
 
 io.on('connection', socket => {
     console.log(`${socket.id} connected`)
-    player_dict[socket.id] = new Player(socket)
+    playerDict[socket.id] = new Player(socket)
 
     socket.on('disconnect', warp(() => {
         console.log(`${socket.id} disconnected`)
-        delete player_dict[socket.id]
+        delete playerDict[socket.id]
     }))
 
     socket.on('getServerName', warp(data => {
@@ -103,7 +103,7 @@ io.on('connection', socket => {
 
     socket.on('listRoom', warp(data => {
         socket.emit("listRoom", {
-            rooms: Object.values(room_dict).filter(room => room.visible).map(room => {
+            rooms: Object.values(roomDict).filter(room => room.visible).map(room => {
                 return {
                     id: room.id,
                     name: room.name,
@@ -120,15 +120,15 @@ io.on('connection', socket => {
         let msg;
         let success = false;
 
-        if (player_dict[socket.id].room != null) msg = 'you are in a room already';
-        else if (!(id in room_dict)) msg = 'id not exsist'
-        else if (room_dict[id].players.length >= 2) msg = 'full'
+        if (playerDict[socket.id].room != null) msg = 'you are in a room already';
+        else if (!(id in roomDict)) msg = 'id not exsist'
+        else if (roomDict[id].players.length >= 2) msg = 'full'
         else {
             msg = 'ok'
             success = true;
 
-            room_dict[id].players.push(socket.id);
-            player_dict[socket.id].room = id
+            roomDict[id].players.push(socket.id);
+            playerDict[socket.id].room = id
             sendPlayerCount(id)
         }
         socket.emit("joinRoom", {
@@ -139,15 +139,15 @@ io.on('connection', socket => {
 
     socket.on('exitRoom', warp(data => {
         let success = false;
-        let id = player_dict[socket.id].room
+        let id = playerDict[socket.id].room
 
-        if (player_dict[socket.id].room != null) {
+        if (playerDict[socket.id].room != null) {
             success = true;
 
-            let players = room_dict[id].players
+            let players = roomDict[id].players
             let index = players.indexOf(socket.id);
             if (index !== -1) players.splice(index, 1);
-            player_dict[socket.id].room = null
+            playerDict[socket.id].room = null
             sendPlayerCount(id)
         }
         socket.emit("exitRoom", {
