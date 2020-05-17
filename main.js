@@ -13,7 +13,7 @@ class Tournament {
     constructor(count) { // count為參加人數
         let rounds = count * 2 - 1
         this.rooms = new Array(rounds + 1);
-        let prefix = 'tournament'
+        let prefix = 't'
 
         for (let i = rounds; i >= 1; i--) {
             let id = prefix + i
