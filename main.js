@@ -163,7 +163,7 @@ io.on('connection', socket => {
 
     socket.on('exitRoom', warp(data => {
         socket.emit("exitRoom", {
-            "success": exitRoom(socker.id),
+            "success": exitRoom(socket.id),
         });
     }))
 })
