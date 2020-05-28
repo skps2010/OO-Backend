@@ -6,8 +6,8 @@ const fs = require('fs');
 const config = JSON.parse(fs.readFileSync('config.json'));
 const assert = require('assert');
 const port = config['port']
-var roomDict = {};
-var playerDict = {}
+const roomDict = {};
+const playerDict = {}
 
 class Tournament {
     constructor(count) { // count為參加人數
@@ -165,6 +165,11 @@ io.on('connection', socket => {
         socket.emit("exitRoom", {
             "success": exitRoom(socket.id),
         });
+    }))
+
+    // for testing player operations
+    socket.on('operation', warp(data => {
+        io.emit("operation", data);
     }))
 })
 
