@@ -45,6 +45,17 @@ class Room {
         this.next = null;
     }
 
+    addPlayer(player) {
+        this.players.push(player);
+        this.sendPlayerCount()
+    }
+
+    removePlayer(player) {
+        let index = this.players.indexOf(player);
+        if (index !== -1) this.players.splice(index, 1);
+        this.sendPlayerCount()
+    }
+
     getPlayers() {
         if (this.type == 'normal') return this.players
         return tournament.getPlayers()
@@ -53,6 +64,15 @@ class Room {
     maxPlayer() {
         if (this.type == 'normal') return 2
         return config['tournament']
+    }
+
+    sendPlayerCount() {
+        let players = this.getPlayers()
+        players.forEach(player => {
+            player.socket.emit('playerCount', {
+                count: players.length
+            })
+        })
     }
 }
 
@@ -68,15 +88,24 @@ class Player {
         this.state = 'lobby'
         this.room = null
     }
-}
 
-function sendPlayerCount(id) {
-    let players = roomDict[id].getPlayers()
-    players.forEach(pid => {
-        playerDict[pid].socket.emit('playerCount', {
-            count: players.length
-        })
-    })
+    joinRoom(room) {
+        if (this.room != null) return "you are in a room already"
+        if (room.players.length >= 2) return "full"
+
+        room.addPlayer(this)
+        this.room = room
+
+        return "ok"
+    }
+
+    exitRoom() {
+        if (this.room == null) return false;
+        this.room.removePlayer(this)
+
+        this.room = null
+        return true
+    }
 }
 
 function warp(func) {
@@ -91,22 +120,6 @@ function warp(func) {
     return warpped
 }
 
-function exitRoom(pid) {
-    let success = false;
-    let id = playerDict[pid].room
-
-    if (playerDict[pid].room != null) {
-        success = true;
-
-        let players = roomDict[id].players
-        let index = players.indexOf(pid);
-        if (index !== -1) players.splice(index, 1);
-        playerDict[pid].room = null
-        sendPlayerCount(id)
-    }
-    return success
-}
-
 io.listen(port);
 
 io.on('connection', socket => {
@@ -114,7 +127,7 @@ io.on('connection', socket => {
     playerDict[socket.id] = new Player(socket)
 
     socket.on('disconnect', warp(() => {
-        exitRoom(socket.id)
+        playerDict[socket.id].exitRoom()
         console.log(`${socket.id} disconnected`)
         delete playerDict[socket.id]
     }))
@@ -139,31 +152,31 @@ io.on('connection', socket => {
     socket.on('joinRoom', warp(data => {
         let id = data.roomID;
         assert.equal(typeof id, 'string')
-        let msg;
-        let success = false;
 
-        if (playerDict[socket.id].room != null) msg = 'you are in a room already';
-        else if (!(id in roomDict)) msg = 'id not exsist'
-        else if (roomDict[id].players.length >= 2) msg = 'full'
-        else {
-            msg = 'ok'
-            success = true;
-
-            roomDict[id].players.push(socket.id);
-            playerDict[socket.id].room = id
-            sendPlayerCount(id)
+        if (!(id in roomDict)) {
+            socket.emit("joinRoom", {
+                "success": false,
+                "msg": 'id not exsist',
+                "roomName": '',
+                "maxPlayer": 0
+            });
+            return
         }
+
+        let room = roomDict[id]
+        let msg = playerDict[socket.id].joinRoom(room);
+
         socket.emit("joinRoom", {
-            "success": success,
+            "success": msg == 'ok',
             "msg": msg,
-            "roomName": roomDict[id].name,
-            "maxPlayer": roomDict[id].maxPlayer()
+            "roomName": room.name,
+            "maxPlayer": room.maxPlayer()
         });
     }))
 
     socket.on('exitRoom', warp(data => {
         socket.emit("exitRoom", {
-            "success": exitRoom(socket.id),
+            "success": playerDict[socket.id].exitRoom(),
         });
     }))
 
