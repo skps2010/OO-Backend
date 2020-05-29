@@ -122,6 +122,17 @@ io.on('connection', socket => {
         fakeBackendDict[socket.id] = new FakeBackend(socket, room)
         room.fakeBackend = fakeBackendDict[socket.id]
 
+        socket.on('setPlayerID', warp(data => {
+            let ids = data.ids
+            let i = 0
+
+            this.room.players.forEach(player => {
+                player.FBid = ids[i]
+                i++
+            })
+
+        }))
+
         socket.emit("serverCreated", {
             "success": true,
         })
