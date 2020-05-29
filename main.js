@@ -26,7 +26,7 @@ tournament.rooms.forEach(room => roomDict[room.id] = room)
 
 var fakeBackendQueue = [];
 Object.values(roomDict).forEach(room => {
-    spawn('ls', ['-lh', '/usr'])
+    //spawn('ls', ['-lh', '/usr'])
     fakeBackendQueue.push(room)
 })
 
