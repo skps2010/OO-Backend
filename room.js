@@ -8,6 +8,7 @@ class Room {
         this.visible = visible
         this.tournament = tournament
         this.next = null
+        this.fakeBackend = null
     }
 
     addPlayer(player) {

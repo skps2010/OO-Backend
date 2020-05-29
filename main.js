@@ -7,10 +7,15 @@ const config = JSON.parse(fs.readFileSync('config.json'))
 const assert = require('assert')
 const port = config['port']
 const Player = require('./player.js')
+const FakeBackend = require('./fakeBackend.js')
 const Tournament = require('./tournament.js')
 const Room = require('./room.js')
 const roomDict = {}
 const playerDict = {}
+const fakeBackendDict = {}
+const spawn = require('child_process').spawn;
+const token = '14508888'
+
 
 config['rooms'].forEach(room => {
     roomDict[room.id] = new Room(room.id, room.name, "normal")
@@ -18,6 +23,12 @@ config['rooms'].forEach(room => {
 
 const tournament = new Tournament(config['tournament'])
 tournament.rooms.forEach(room => roomDict[room.id] = room)
+
+var fakeBackendQueue = [];
+Object.values(roomDict).forEach(room => {
+    spawn('ls', ['-lh', '/usr'])
+    fakeBackendQueue.push(room)
+})
 
 function warp(func) {
     function warpped(...args) {
@@ -38,9 +49,12 @@ io.on('connection', socket => {
     playerDict[socket.id] = new Player(socket)
 
     socket.on('disconnect', warp(() => {
-        playerDict[socket.id].exitRoom()
         console.log(`${socket.id} disconnected`)
-        delete playerDict[socket.id]
+
+        if (socket.id in playerDict) {
+            playerDict[socket.id].exitRoom()
+            delete playerDict[socket.id]
+        } else delete fakeBackendDict[socket.id]
     }))
 
     socket.on('getServerName', warp(data => {
@@ -89,6 +103,29 @@ io.on('connection', socket => {
         socket.emit("exitRoom", {
             "success": playerDict[socket.id].exitRoom(),
         })
+    }))
+
+    socket.on('serverCreated', warp(data => {
+        console.log("token:" + token + data.token)
+        if (data.token != token) {
+            socket.emit("serverCreated", {
+                "success": false,
+            })
+
+            return
+        }
+
+        console.log(`${socket.id} is now a fake backend`)
+        delete playerDict[socket.id]
+
+        let room = fakeBackendQueue.pop()
+        fakeBackendDict[socket.id] = new FakeBackend(socket, room)
+        room.fakeBackend = fakeBackendDict[socket.id]
+
+        socket.emit("serverCreated", {
+            "success": true,
+        })
+
     }))
 
     // for testing player operations

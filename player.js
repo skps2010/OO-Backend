@@ -5,6 +5,7 @@ class Player {
         this.id = socket.id
         this.state = 'lobby'
         this.room = null
+        this.FBid = null
     }
 
     joinRoom(room) {
