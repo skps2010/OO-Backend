@@ -1,10 +1,10 @@
+'use strict'
 const Room = require('./room.js')
-const fs = require('fs');
 
 class Tournament {
     constructor(count) { // count為參加人數
         let rounds = count - 1
-        this.rooms = new Array(rounds + 1);
+        this.rooms = new Array(rounds + 1)
         this.max = count
         let prefix = 't'
 
@@ -21,7 +21,7 @@ class Tournament {
     }
 
     getPlayers() {
-        let players = [];
+        let players = []
         this.rooms.forEach(room => players = players.concat(room.players))
         return players
     }

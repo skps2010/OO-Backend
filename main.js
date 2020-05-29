@@ -1,15 +1,15 @@
-'use strict';
+'use strict'
 const io = require('socket.io')({
     transports: ['websocket'],
-});
-const fs = require('fs');
-const config = JSON.parse(fs.readFileSync('config.json'));
-const assert = require('assert');
+})
+const fs = require('fs')
+const config = JSON.parse(fs.readFileSync('config.json'))
+const assert = require('assert')
 const port = config['port']
 const Player = require('./player.js')
 const Tournament = require('./tournament.js')
 const Room = require('./room.js')
-const roomDict = {};
+const roomDict = {}
 const playerDict = {}
 
 config['rooms'].forEach(room => {
@@ -31,7 +31,7 @@ function warp(func) {
     return warpped
 }
 
-io.listen(port);
+io.listen(port)
 
 io.on('connection', socket => {
     console.log(`${socket.id} connected`)
@@ -44,7 +44,7 @@ io.on('connection', socket => {
     }))
 
     socket.on('getServerName', warp(data => {
-        socket.emit("getServerName", { name: config['serverName'] });
+        socket.emit("getServerName", { name: config['serverName'] })
     }))
 
     socket.on('listRoom', warp(data => {
@@ -57,11 +57,11 @@ io.on('connection', socket => {
                     type: room.type
                 }
             })
-        });
+        })
     }))
 
     socket.on('joinRoom', warp(data => {
-        let id = data.roomID;
+        let id = data.roomID
         assert.equal(typeof id, 'string')
 
         if (!(id in roomDict)) {
@@ -70,30 +70,30 @@ io.on('connection', socket => {
                 "msg": 'id not exsist',
                 "roomName": '',
                 "maxPlayer": 0
-            });
+            })
             return
         }
 
         let room = roomDict[id]
-        let msg = playerDict[socket.id].joinRoom(room);
+        let msg = playerDict[socket.id].joinRoom(room)
 
         socket.emit("joinRoom", {
             "success": msg == 'ok',
             "msg": msg,
             "roomName": room.name,
             "maxPlayer": room.maxPlayer()
-        });
+        })
     }))
 
     socket.on('exitRoom', warp(data => {
         socket.emit("exitRoom", {
             "success": playerDict[socket.id].exitRoom(),
-        });
+        })
     }))
 
     // for testing player operations
     socket.on('operation', warp(data => {
-        io.emit("operation", data);
+        io.emit("operation", data)
     }))
 })
 

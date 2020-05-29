@@ -1,7 +1,8 @@
-module.exports = class Player {
+'use strict'
+class Player {
     constructor(socket) {
         this.socket = socket
-        this.id = socket.id;
+        this.id = socket.id
         this.state = 'lobby'
         this.room = null
     }
@@ -17,10 +18,12 @@ module.exports = class Player {
     }
 
     exitRoom() {
-        if (this.room == null) return false;
+        if (this.room == null) return false
         this.room.removePlayer(this)
 
         this.room = null
         return true
     }
 }
+
+module.exports = Player

@@ -1,22 +1,23 @@
+'use strict'
 class Room {
     constructor(id, name, type, visible = true, tournament = null) {
-        this.id = id;
-        this.name = name;
-        this.players = [];
-        this.type = type;
-        this.visible = visible;
-        this.tournament = tournament;
-        this.next = null;
+        this.id = id
+        this.name = name
+        this.players = []
+        this.type = type
+        this.visible = visible
+        this.tournament = tournament
+        this.next = null
     }
 
     addPlayer(player) {
-        this.players.push(player);
+        this.players.push(player)
         this.sendPlayerCount()
     }
 
     removePlayer(player) {
-        let index = this.players.indexOf(player);
-        if (index !== -1) this.players.splice(index, 1);
+        let index = this.players.indexOf(player)
+        if (index !== -1) this.players.splice(index, 1)
         this.sendPlayerCount()
     }
 
