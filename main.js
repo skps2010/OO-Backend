@@ -6,107 +6,18 @@ const fs = require('fs');
 const config = JSON.parse(fs.readFileSync('config.json'));
 const assert = require('assert');
 const port = config['port']
+const Player = require('./player.js')
+const Tournament = require('./tournament.js')
+const Room = require('./room.js')
 const roomDict = {};
 const playerDict = {}
-
-class Tournament {
-    constructor(count) { // count為參加人數
-        let rounds = count * 2 - 1
-        this.rooms = new Array(rounds + 1);
-        let prefix = 't'
-
-        for (let i = rounds; i >= 1; i--) {
-            let id = prefix + i
-            let room = new Room(id, "tournament room #" + i, "tournament", i >= count)
-            this.rooms[i] = room
-            roomDict[id] = room
-
-            if (i < count) {
-                this.rooms[i * 2].next = room
-                this.rooms[i * 2 + 1].next = room
-            }
-        }
-    }
-
-    getPlayers() {
-        let players = [];
-        this.rooms.forEach(room => players = players.concat(room.players))
-        return players
-    }
-}
-
-class Room {
-    constructor(id, name, type, visible = true) {
-        this.id = id;
-        this.name = name;
-        this.players = [];
-        this.type = type;
-        this.visible = visible;
-        this.next = null;
-    }
-
-    addPlayer(player) {
-        this.players.push(player);
-        this.sendPlayerCount()
-    }
-
-    removePlayer(player) {
-        let index = this.players.indexOf(player);
-        if (index !== -1) this.players.splice(index, 1);
-        this.sendPlayerCount()
-    }
-
-    getPlayers() {
-        if (this.type == 'normal') return this.players
-        return tournament.getPlayers()
-    }
-
-    maxPlayer() {
-        if (this.type == 'normal') return 2
-        return config['tournament']
-    }
-
-    sendPlayerCount() {
-        let players = this.getPlayers()
-        players.forEach(player => {
-            player.socket.emit('playerCount', {
-                count: players.length
-            })
-        })
-    }
-}
 
 config['rooms'].forEach(room => {
     roomDict[room.id] = new Room(room.id, room.name, "normal")
 })
-var tournament = new Tournament(config['tournament'])
 
-class Player {
-    constructor(socket) {
-        this.socket = socket
-        this.id = socket.id;
-        this.state = 'lobby'
-        this.room = null
-    }
-
-    joinRoom(room) {
-        if (this.room != null) return "you are in a room already"
-        if (room.players.length >= 2) return "full"
-
-        room.addPlayer(this)
-        this.room = room
-
-        return "ok"
-    }
-
-    exitRoom() {
-        if (this.room == null) return false;
-        this.room.removePlayer(this)
-
-        this.room = null
-        return true
-    }
-}
+const tournament = new Tournament(config['tournament'])
+tournament.rooms.forEach(room => roomDict[room.id] = room)
 
 function warp(func) {
     function warpped(...args) {
