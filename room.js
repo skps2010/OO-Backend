@@ -14,6 +14,9 @@ class Room {
     addPlayer(player) {
         this.players.push(player)
         this.sendPlayerCount()
+
+        if (this.players.length == 2)
+            this.startGame()
     }
 
     removePlayer(player) {
@@ -38,6 +41,20 @@ class Room {
             player.socket.emit('playerCount', {
                 count: players.length
             })
+        })
+    }
+
+    startGame() {
+        this.players.forEach(player => {
+            player.socket.emit('startGame')
+        })
+
+        this.initOver()
+    }
+
+    initOver() {
+        this.players.forEach(player => {
+            player.socket.emit('initOver')
         })
     }
 }
