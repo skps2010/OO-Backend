@@ -14,5 +14,7 @@
         "name": "死"
     }],
     "tournament": 8,
-    "port": 4567
+    "port": 4567,
+    "FBToken": "14508888",
+    "FBPath": "fakeBackend.app/Contents/MacOS/OOAD-unity-fe"
 }

@@ -1,37 +1,35 @@
 'use strict'
-const io = require('socket.io')({
-    transports: ['websocket'],
-})
+
 const fs = require('fs')
-const config = JSON.parse(fs.readFileSync('config.json'))
 const assert = require('assert')
-const port = config['port']
 const Player = require('./player.js')
 const FakeBackend = require('./fakeBackend.js')
 const Tournament = require('./tournament.js')
 const Room = require('./room.js')
+// const spawn = require('child_process').spawn
+
 const roomDict = {}
 const playerDict = {}
 const fakeBackendDict = {}
-const spawn = require('child_process').spawn;
-const token = '14508888'
 
+const config = JSON.parse(fs.readFileSync('config.json'))
+const port = config['port']
+const token = config['FBToken']
 
 config['rooms'].forEach(room => {
-    roomDict[room.id] = new Room(room.id, room.name, "normal")
+    roomDict[room.id] = new Room(room.id, room.name, 'normal')
 })
 
 const tournament = new Tournament(config['tournament'])
 tournament.rooms.forEach(room => roomDict[room.id] = room)
 
-var fakeBackendQueue = [];
-Object.values(roomDict).forEach(room => {
-    //spawn('ls', ['-lh', '/usr'])
-    fakeBackendQueue.push(room)
-})
+// Object.values(roomDict).forEach(room => {
+//     //spawn('ls', ['-lh', '/usr'])
+//     Room.fakeBackendQueue.push(room)
+// })
 
-function warp(func) {
-    function warpped(...args) {
+function wrap(func) {
+    function wrapped(...args) {
         try {
             func(...args)
         } catch (e) {
@@ -39,8 +37,12 @@ function warp(func) {
         }
     }
 
-    return warpped
+    return wrapped
 }
+
+const io = require('socket.io')({
+    transports: ['websocket'],
+})
 
 io.listen(port)
 
@@ -48,21 +50,23 @@ io.on('connection', socket => {
     console.log(`${socket.id} connected`)
     playerDict[socket.id] = new Player(socket)
 
-    socket.on('disconnect', warp(() => {
+    socket.on('disconnect', wrap(() => {
         console.log(`${socket.id} disconnected`)
 
         if (socket.id in playerDict) {
             playerDict[socket.id].exitRoom()
             delete playerDict[socket.id]
-        } else delete fakeBackendDict[socket.id]
+        } else {
+            delete fakeBackendDict[socket.id]
+        }
     }))
 
-    socket.on('getServerName', warp(data => {
-        socket.emit("getServerName", { name: config['serverName'] })
+    socket.on('getServerName', wrap(data => {
+        socket.emit('getServerName', { name: config['serverName'] })
     }))
 
-    socket.on('listRoom', warp(data => {
-        socket.emit("listRoom", {
+    socket.on('listRoom', wrap(data => {
+        socket.emit('listRoom', {
             rooms: Object.values(roomDict).filter(room => room.visible).map(room => {
                 return {
                     id: room.id,
@@ -74,16 +78,16 @@ io.on('connection', socket => {
         })
     }))
 
-    socket.on('joinRoom', warp(data => {
+    socket.on('joinRoom', wrap(data => {
         let id = data.roomID
         assert.equal(typeof id, 'string')
 
         if (!(id in roomDict)) {
-            socket.emit("joinRoom", {
-                "success": false,
-                "msg": 'id not exsist',
-                "roomName": '',
-                "maxPlayer": 0
+            socket.emit('joinRoom', {
+                'success': false,
+                'msg': 'id not exsist',
+                'roomName': '',
+                'maxPlayer': 0
             })
             return
         }
@@ -91,25 +95,25 @@ io.on('connection', socket => {
         let room = roomDict[id]
         let msg = playerDict[socket.id].joinRoom(room)
 
-        socket.emit("joinRoom", {
-            "success": msg == 'ok',
-            "msg": msg,
-            "roomName": room.name,
-            "maxPlayer": room.maxPlayer()
+        socket.emit('joinRoom', {
+            'success': msg === 'ok',
+            'msg': msg,
+            'roomName': room.name,
+            'maxPlayer': room.maxPlayer
         })
     }))
 
-    socket.on('exitRoom', warp(data => {
-        socket.emit("exitRoom", {
-            "success": playerDict[socket.id].exitRoom(),
+    socket.on('exitRoom', wrap(data => {
+        socket.emit('exitRoom', {
+            'success': playerDict[socket.id].exitRoom(),
         })
     }))
 
-    socket.on('serverCreated', warp(data => {
-        console.log("token:" + token + data.token)
+    socket.on('serverCreated', wrap(data => {
+        console.log(`token: ${token} ${data.token}`)
         if (data.token != token) {
-            socket.emit("serverCreated", {
-                "success": false,
+            socket.emit('serverCreated', {
+                'success': false,
             })
 
             return
@@ -118,30 +122,41 @@ io.on('connection', socket => {
         console.log(`${socket.id} is now a fake backend`)
         delete playerDict[socket.id]
 
-        let room = fakeBackendQueue.pop()
+        let room = Room.fakeBackendQueue.pop()
         fakeBackendDict[socket.id] = new FakeBackend(socket, room)
         room.fakeBackend = fakeBackendDict[socket.id]
 
-        socket.on('setPlayerID', warp(data => {
+        room.players.forEach(player => {
+            player.socket.emit('startGame')
+        })
+
+        socket.on('setPlayerID', wrap(data => {
+            console.log(data)
+            console.log(JSON.stringify(data))
             let ids = data.ids
             let i = 0
 
-            this.room.players.forEach(player => {
+            let room = fakeBackendDict[socket.id].room
+            room.players.forEach(player => {
                 player.FBid = ids[i]
-                i++
+                ++i
             })
-
         }))
 
-        socket.emit("serverCreated", {
-            "success": true,
+        socket.on('initOver', wrap(data => {
+            let room = fakeBackendDict[socket.id].room
+            room.initOver()
+        }))
+
+        socket.emit('serverCreated', {
+            'success': true,
         })
 
     }))
 
     // for testing player operations
-    socket.on('operation', warp(data => {
-        io.emit("operation", data)
+    socket.on('operation', wrap(data => {
+        io.emit('operation', data)
     }))
 })
 

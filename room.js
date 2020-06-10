@@ -1,4 +1,9 @@
 'use strict'
+
+const exec = require('child_process').exec
+const config = require('./config.json')
+
+
 class Room {
     constructor(id, name, type, visible = true, tournament = null) {
         this.id = id
@@ -30,7 +35,7 @@ class Room {
         return this.tournament.getPlayers()
     }
 
-    maxPlayer() {
+    get maxPlayer() {
         if (this.type == 'normal') return 2
         return this.tournament.max
     }
@@ -45,11 +50,12 @@ class Room {
     }
 
     startGame() {
-        this.players.forEach(player => {
-            player.socket.emit('startGame')
-        })
+        // create FB
+        Room.fakeBackendQueue.push(this)
 
-        this.initOver()
+        exec(`./${config['FBPath']}`)
+
+        // this.initOver()
     }
 
     initOver() {
@@ -58,5 +64,7 @@ class Room {
         })
     }
 }
+
+Room.fakeBackendQueue = []
 
 module.exports = Room
