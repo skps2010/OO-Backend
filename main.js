@@ -6,7 +6,7 @@ const Player = require('./player.js')
 const FakeBackend = require('./fakeBackend.js')
 const Tournament = require('./tournament.js')
 const Room = require('./room.js')
-// const spawn = require('child_process').spawn
+    // const spawn = require('child_process').spawn
 
 const roomDict = {}
 const playerDict = {}
@@ -31,6 +31,7 @@ tournament.rooms.forEach(room => roomDict[room.id] = room)
 function wrap(func) {
     function wrapped(...args) {
         try {
+            args = args.map(arg => typeof arg == 'string' ? JSON.parse(arg) : arg);
             func(...args)
         } catch (e) {
             console.log(e)
@@ -121,8 +122,8 @@ io.on('connection', socket => {
         const player = playerDict[socket.id]
         const room = player.room
         const fb = room.fakeBackend
-        ++fb.i
-        if(fb.i == 2) {
+            ++fb.i
+        if (fb.i == 2) {
             fb.socket.emit('ready')
         }
     }))
@@ -157,7 +158,7 @@ io.on('connection', socket => {
             // let room = fakeBackendDict[socket.id].room
             room.players.forEach(player => {
                 player.FBid = ids[i]
-                ++i
+                    ++i
             })
         }))
 
