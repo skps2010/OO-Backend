@@ -4,6 +4,7 @@ class FakeBackend {
         this.socket = socket
         this.id = socket.id
         this.room = room
+        this.i = 0
     }
 }
 

@@ -109,6 +109,24 @@ io.on('connection', socket => {
         })
     }))
 
+    socket.on('operation', wrap(data => {
+        const player = playerDict[socket.id]
+        const room = player.room
+        const fb = room.fakeBackend
+        data['uuid'] = player.FBid
+        fb.socket.emit('operation', data);
+    }))
+
+    socket.on('ready', wrap(data => {
+        const player = playerDict[socket.id]
+        const room = player.room
+        const fb = room.fakeBackend
+        ++fb.i
+        if(fb.i == 2) {
+            fb.socket.emit('ready')
+        }
+    }))
+
     socket.on('serverCreated', wrap(data => {
         console.log(`token: ${token} ${data.token}`)
         if (data.token != token) {
@@ -136,7 +154,7 @@ io.on('connection', socket => {
             let ids = data.ids
             let i = 0
 
-            let room = fakeBackendDict[socket.id].room
+            // let room = fakeBackendDict[socket.id].room
             room.players.forEach(player => {
                 player.FBid = ids[i]
                 ++i
@@ -144,8 +162,14 @@ io.on('connection', socket => {
         }))
 
         socket.on('initOver', wrap(data => {
-            let room = fakeBackendDict[socket.id].room
+            // let room = fakeBackendDict[socket.id].room
             room.initOver()
+        }))
+
+        socket.on('updateEntity', wrap(data => {
+            room.players.forEach(player => {
+                player.socket.emit('updateEntity', data)
+            })
         }))
 
         socket.emit('serverCreated', {
