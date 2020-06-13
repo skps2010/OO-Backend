@@ -1,5 +1,5 @@
 'use strict'
-
+const resolve = require('path').resolve
 const exec = require('child_process').exec
 const config = require('./config.json')
 
@@ -50,10 +50,10 @@ class Room {
     }
 
     startGame() {
-        // create FB
+        // create FB0
         Room.fakeBackendQueue.push(this)
-
-        exec(`./${config['FBPath']}`)
+		console.log("try to create FB")
+        exec(resolve(`./${config['FBPath']}`))
 
         // this.initOver()
     }
