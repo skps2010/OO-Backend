@@ -6,7 +6,6 @@ const Player = require('./player.js')
 const FakeBackend = require('./fakeBackend.js')
 const Tournament = require('./tournament.js')
 const Room = require('./room.js')
-    // const spawn = require('child_process').spawn
 
 const roomDict = {}
 const playerDict = {}
@@ -23,11 +22,6 @@ config['rooms'].forEach(room => {
 const tournament = new Tournament(config['tournament'])
 tournament.rooms.forEach(room => roomDict[room.id] = room)
 
-// Object.values(roomDict).forEach(room => {
-//     //spawn('ls', ['-lh', '/usr'])
-//     Room.fakeBackendQueue.push(room)
-// })
-
 function wrap(func) {
     function wrapped(...args) {
         try {
@@ -35,6 +29,7 @@ function wrap(func) {
             func(...args)
         } catch (e) {
             console.log(e)
+            console.log('args:', args)
         }
     }
 
@@ -51,7 +46,7 @@ io.on('connection', socket => {
     console.log(`${socket.id} connected`)
     playerDict[socket.id] = new Player(socket)
 
-    socket.on('disconnect', wrap(() => {
+    socket.on('disconnect', () => {
         console.log(`${socket.id} disconnected`)
 
         if (socket.id in playerDict) {
@@ -60,7 +55,7 @@ io.on('connection', socket => {
         } else {
             delete fakeBackendDict[socket.id]
         }
-    }))
+    })
 
     socket.on('getServerName', wrap(data => {
         socket.emit('getServerName', { name: config['serverName'] })
@@ -155,7 +150,6 @@ io.on('connection', socket => {
             let ids = data.ids
             let i = 0
 
-            // let room = fakeBackendDict[socket.id].room
             room.players.forEach(player => {
                 player.FBid = ids[i]
                     ++i
@@ -163,7 +157,6 @@ io.on('connection', socket => {
         }))
 
         socket.on('initOver', wrap(data => {
-            // let room = fakeBackendDict[socket.id].room
             room.initOver()
         }))
 
@@ -176,12 +169,6 @@ io.on('connection', socket => {
         socket.emit('serverCreated', {
             'success': true,
         })
-
-    }))
-
-    // for testing player operations
-    socket.on('operation', wrap(data => {
-        io.emit('operation', data)
     }))
 })
 
