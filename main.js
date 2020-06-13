@@ -25,7 +25,7 @@ tournament.rooms.forEach(room => roomDict[room.id] = room)
 function wrap(func) {
     function wrapped(...args) {
         try {
-            args = args.map(arg => typeof arg == 'string' ? JSON.parse(arg) : arg);
+            args = args.map(arg => typeof arg == 'string' ? JSON.parse(arg) : arg)
             func(...args)
         } catch (e) {
             console.log(e)
@@ -110,7 +110,7 @@ io.on('connection', socket => {
         const room = player.room
         const fb = room.fakeBackend
         data['uuid'] = player.FBid
-        fb.socket.emit('operation', data);
+        fb.socket.emit('operation', data)
     }))
 
     socket.on('ready', wrap(data => {
@@ -161,9 +161,11 @@ io.on('connection', socket => {
         }))
 
         socket.on('updateEntity', wrap(data => {
-            room.players.forEach(player => {
-                player.socket.emit('updateEntity', data)
-            })
+            room.boardcast('updateEntity', data)
+        }))
+
+        socket.on('invokeEvent', wrap(data => {
+            room.boardcast('invokeEvent', data)
         }))
 
         socket.emit('serverCreated', {

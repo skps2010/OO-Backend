@@ -42,10 +42,8 @@ class Room {
 
     sendPlayerCount() {
         let players = this.getPlayers()
-        players.forEach(player => {
-            player.socket.emit('playerCount', {
-                count: players.length
-            })
+        this.boardcast('playerCount', {
+            count: players.length
         })
     }
 
@@ -53,12 +51,16 @@ class Room {
         // create FB0
         Room.fakeBackendQueue.push(this)
         console.log("try to create FB")
-        exec(resolve(`./${config['FBPath']}`))
+            //exec(resolve(`./${config['FBPath']}`))
     }
 
     initOver() {
+        this.boardcast('initOver')
+    }
+
+    boardcast(name, args = null) {
         this.players.forEach(player => {
-            player.socket.emit('initOver')
+            player.socket.emit(name, args)
         })
     }
 }
