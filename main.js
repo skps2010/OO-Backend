@@ -105,6 +105,38 @@ io.on('connection', socket => {
         })
     }))
 
+    socket.on('addRoom', wrap(data => {
+        const rommID = data.roomID
+        const success = roomID in roomDict && data.token === token
+        if(success) {
+            roomDict[roomID] = new Room(roomID, data.name, 'normal')
+        }
+        socket.emit('addRoom', {
+            'success': success
+        })
+    }))
+
+    socket.on('closeRoom', wrap(data => {
+        const roomID = data.roomID
+        const success = data.token === token && roomID in roomDict && roomDict[roomID].players.length == 0
+        if(success) {
+            delete roomDict[roomID]
+        }
+        socket.emit('closeRoom', {
+            'success': success
+        })
+    }))
+
+    socket.on('removePlayer', wrap(data => {
+        const success = data.token === token && data.playerID in playerDict
+        if(success) {
+            playerDict[data.playerID].socket.disconnect()
+        }
+        socket.emit('removePlayer', {
+            'success': success
+        })
+    }))
+
     socket.on('operation', wrap(data => {
         const player = playerDict[socket.id]
         const room = player.room
