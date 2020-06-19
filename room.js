@@ -42,8 +42,10 @@ class Room {
 
     sendPlayerCount() {
         let players = this.getPlayers()
-        this.boardcast('playerCount', {
-            count: players.length
+        players.forEach(player => {
+            player.socket.emit('playerCount', {
+                count: players.length
+            })
         })
     }
 

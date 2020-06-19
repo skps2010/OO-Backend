@@ -121,6 +121,8 @@ io.on('connection', socket => {
         if (fb.i == 2) {
             fb.socket.emit('ready')
         }
+
+        console.log('ready!!!!!!', fb.i)
     }))
 
     socket.on('serverCreated', wrap(data => {
