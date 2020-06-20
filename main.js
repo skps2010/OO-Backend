@@ -108,7 +108,7 @@ io.on('connection', socket => {
     socket.on('addRoom', wrap(data => {
         const rommID = data.roomID
         const success = roomID in roomDict && data.token === token
-        if(success) {
+        if (success) {
             roomDict[roomID] = new Room(roomID, data.name, 'normal')
         }
         socket.emit('addRoom', {
@@ -119,7 +119,7 @@ io.on('connection', socket => {
     socket.on('closeRoom', wrap(data => {
         const roomID = data.roomID
         const success = data.token === token && roomID in roomDict && roomDict[roomID].players.length == 0
-        if(success) {
+        if (success) {
             delete roomDict[roomID]
         }
         socket.emit('closeRoom', {
@@ -129,7 +129,7 @@ io.on('connection', socket => {
 
     socket.on('removePlayer', wrap(data => {
         const success = data.token === token && data.playerID in playerDict
-        if(success) {
+        if (success) {
             playerDict[data.playerID].socket.disconnect()
         }
         socket.emit('removePlayer', {
@@ -149,12 +149,12 @@ io.on('connection', socket => {
         const player = playerDict[socket.id]
         const room = player.room
         const fb = room.fakeBackend
-            ++fb.i
-        if (fb.i == 2) {
+            ++fb.readier
+        if (fb.readier == 2) {
             fb.socket.emit('ready')
         }
 
-        console.log('ready!!!!!!', fb.i)
+        console.log('ready!!!!!!', fb.readier)
     }))
 
     socket.on('serverCreated', wrap(data => {

@@ -53,7 +53,7 @@ class Room {
         // create FB0
         Room.fakeBackendQueue.push(this)
         console.log("try to create FB")
-            //exec(resolve(`./${config['FBPath']}`))
+        exec(resolve(`./${config['FBPath']}`))
     }
 
     initOver() {
